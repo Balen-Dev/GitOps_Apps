@@ -1,20 +1,20 @@
-name: Go
+name: Go CI/CD
 
 on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "README.md"
+    paths:
+      - "services/go/**"
+      - "apps/**"
   workflow_dispatch:
+
+env:
+  IMAGE_NAME: balenabdalla/go-greeting-api
 
 jobs:
   test-build-push:
     runs-on: ubuntu-latest
-
-    env:
-      IMAGE_NAME: balenabdalla/go-greeting-api
-
     defaults:
       run:
         working-directory: services/go
@@ -43,9 +43,6 @@ jobs:
       - name: Run gosec (security scan)
         run: ~/go/bin/gosec ./...
 
-      # - name: Run Go tests
-      #   run: go test ./...
-
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
@@ -61,3 +58,10 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Trigger deployment notification
+        if: success()
+        run: |
+          echo "✅ New image pushed: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "FluxCD will automatically detect and deploy the new image"
+          echo "Monitor deployment at: https://github.com/Balen-Dev/GitOps_Infra"
